@@ -1,0 +1,22 @@
+name: csubu_flutter_app
+description: a template project for flutter course.
+
+environment:
+  sdk: '<3.0.0'
+  flutter: '>=1.5.9-pre.270'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^0.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/csubu-bw.png
