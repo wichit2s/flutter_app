@@ -1,5 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
 
@@ -41,17 +45,70 @@ class _AppHomePageState extends State<AppHomePage> {
 
   int _counter = 0;
   var _courses = <dynamic>[ ];
+  // Future<dynamic> _students;
+  var _students = [];
+  var _loading = true;
+  var _page = 0;
 
+  _getStudents() async {
+    var url = 'http://cs.sci.ubu.ac.th:7512/topic-1/student/_search?from=${_page*10}&size=10';
+    const headers = { 'Content-Type': 'application/json; charset=utf-8' };
+    const query = { 'query': { 'match_all': {} } };
+    final response = await http.post(url, headers: headers, body: json.encode(query));
+    _students = [];
+    if (response.statusCode == 200) {
+      var result = jsonDecode(utf8.decode(response.bodyBytes))['result']['hits'];
+      result.forEach((item) {
+        if (item.containsKey('_source')) {
+          var source = item['_source'];
+          if (source.containsKey('name') && source.containsKey('email')) {
+            _students.add(item['_source']);
+          }
+        }
+      });
+    }
+    setState(() {
+      _page = (_page+1)%3;
+      _loading = false;
+    });
+  }
 
   void _incrementCounter() {
-    setState(() {
-      _counter++;
-      _courses.add({
-        'title': 'Course Title',
-        'instructor': 'avatar',
-        'description': 'Foundation of the course, intermediate course content, and advance topics.'
-      });
-    });
+    setState(() { _loading = true; });
+    _getStudents();
+  }
+
+  Widget studentWidgets(BuildContext context) {
+    return ListView.separated(
+        itemCount: _students.length,
+        padding: const EdgeInsets.all(8.0),
+        separatorBuilder: (context, i) => const Divider(),
+        itemBuilder: (context, i) {
+          final student = _students[i];
+          var sum = 0;
+          student['email'].runes.forEach((c) { sum += c; });
+          return ListTile(
+            title: Row(
+                  children: <Widget>[
+                    // Image.asset('assets/images/csubu-bw.png', width: 48, height: 48),
+                    CircleAvatar(backgroundImage: NetworkImage('https://picsum.photos/id/${sum%30}/48/48')),
+                    Expanded(child: Text(student["name"]))
+                  ]
+                ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text('Age: ${student["age"]}'),
+                Text('Email: ${student["email"]}')
+              ]
+             )
+          );
+        }
+      );
+  }
+
+  Widget loadingWidget(BuildContext context) {
+    return Column(children: <Widget>[Text('loading....'), CircularProgressIndicator(), Text('Click the button')]);
   }
 
   @override
@@ -61,29 +118,16 @@ class _AppHomePageState extends State<AppHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: ListView.separated(
-          itemCount: _courses.length,
-          padding: const EdgeInsets.all(8.0),
-          separatorBuilder: (context, i) => const Divider(),
-          itemBuilder: (context, i) {
-            final course = _courses[i];
-            return ListTile(
-              title: Row(
-                    children: <Widget>[
-                      Image.asset('assets/images/csubu-bw.png', width: 48, height: 48),
-                      Expanded(child: Text(course['title']))
-                    ]
-                  ),
-              subtitle: Text(course['description'])
-            );
-          }
-        ),
+        child: (_loading)? loadingWidget(context) : studentWidgets(context),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        child: Container(height: 50.0,),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ),
+        child: Text('$_page'), // Icon(Icons.add),
+      )
     );
   }
 }
