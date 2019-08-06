@@ -22,7 +22,8 @@ class CSUBUFlutterApp extends StatelessWidget {
     return MaterialApp(
       title: appTitle,
       theme: ThemeData(
-        primarySwatch: Colors.blue
+        primarySwatch: Colors.blue,
+        //fontFamily: 'Roboto'
       ),
       home: AppHomePage(title: appTitle),
     );
