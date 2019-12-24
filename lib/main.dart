@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'student.dart';
+import 'user.dart';
+
 void main() {
 
   debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
@@ -48,11 +51,12 @@ class _AppHomePageState extends State<AppHomePage> {
   var _courses = <dynamic>[ ];
   // Future<dynamic> _students;
   var _students = [];
+  var _users = [];
   var _loading = true;
   var _page = 0;
 
-  _getStudents() async {
-    var url = 'http://cs.sci.ubu.ac.th:7512/topic-1/student/_search?from=${_page*10}&size=10';
+  _get_students_from_kuzzle() async {
+    var url = 'https://cs.sci.ubu.ac.th:7512/topic-1/student/_search?from=${_page*10}&size=10';
     const headers = { 'Content-Type': 'application/json; charset=utf-8' };
     const query = { 'query': { 'match_all': {} } };
     final response = await http.post(url, headers: headers, body: json.encode(query));
@@ -74,38 +78,24 @@ class _AppHomePageState extends State<AppHomePage> {
     });
   }
 
-  void _incrementCounter() {
-    setState(() { _loading = true; });
-    _getStudents();
+  _get_users_from_github() async {
+    var url = 'https://api.github.com/users';
+    final response = await http.get(url);
+    _users = [];
+    if (response.statusCode == 200) {
+      var result = jsonDecode(utf8.decode(response.bodyBytes)); //['result']['hits'];
+      _users = result;
+    }
+    setState(() {
+      _page = (_page+1)%3;
+      _loading = false;
+    });
   }
 
-  Widget studentWidgets(BuildContext context) {
-    return ListView.separated(
-        itemCount: _students.length,
-        padding: const EdgeInsets.all(8.0),
-        separatorBuilder: (context, i) => const Divider(),
-        itemBuilder: (context, i) {
-          final student = _students[i];
-          var sum = 0;
-          student['email'].runes.forEach((c) { sum += c; });
-          return ListTile(
-            title: Row(
-                  children: <Widget>[
-                    // Image.asset('assets/images/csubu-bw.png', width: 48, height: 48),
-                    CircleAvatar(backgroundImage: NetworkImage('https://picsum.photos/id/${sum%30}/48/48')),
-                    Expanded(child: Text(student["name"]))
-                  ]
-                ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Age: ${student["age"]}'),
-                Text('Email: ${student["email"]}')
-              ]
-             )
-          );
-        }
-      );
+  void _incrementCounter() {
+    setState(() { _loading = true; });
+    // _get_students_from_kuzzle();
+    _get_users_from_github();
   }
 
   Widget loadingWidget(BuildContext context) {
@@ -119,7 +109,7 @@ class _AppHomePageState extends State<AppHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: (_loading)? loadingWidget(context) : studentWidgets(context),
+        child: (_loading)? loadingWidget(context) : UserWidget(users: _users), // StudentWidget(students: _students),
       ),
       bottomNavigationBar: BottomAppBar(
         child: Container(height: 50.0,),
