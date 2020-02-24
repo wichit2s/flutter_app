@@ -8,6 +8,16 @@ Modified from https://github.com/google/flutter-desktop-embedding
 
 ## Preparation
 
+### Install flutter sdk
+
+https://flutter.dev/docs/get-started/install
+
+### Change channel to master
+
+```sh
+flutter channel master
+```
+
 ### Linux
 
 ```sh
@@ -38,7 +48,8 @@ flutter packages get
 ## Starting Application
 
 ```sh
-flutter run
+flutter run -d emulator-5554
+flutter run -d Linux
 ```
 
 
